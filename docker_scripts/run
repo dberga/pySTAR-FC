@@ -1,0 +1,28 @@
+#!/bin/bash
+
+PROJECT_ROOT="$(cd "$(dirname "$0")"; cd ..; pwd)"
+STARFCPY_ROOT="/opt/STAR-FCpy"
+
+xhost +local:starfcpy
+sudo nvidia-docker run -it \
+  --name starfcpy \
+  -h starfcpy \
+  --volume ${PROJECT_ROOT}:${STARFCPY_ROOT} \
+  -v /dev/input \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -e DISPLAY=$DISPLAY \
+  -w ${STARFCPY_ROOT} \
+  --rm \
+  starfcpy "$@"
+xhost -local:starfcpy
+
+
+#  --volume ${PROJECT_ROOT}/src:${STARFCPY_ROOT}/src \
+#  --volume ${PROJECT_ROOT}/data:${STARFCPY_ROOT}/data \
+#  --volume ${PROJECT_ROOT}/images:${STARFCPY_ROOT}/images \
+#  --volume ${PROJECT_ROOT}/contrib:${STARFCPY_ROOT}/contrib \
+#  --volume ${PROJECT_ROOT}/config_files:${STARFCPY_ROOT}/config_files \
+#  --volume ${PROJECT_ROOT}/datasets:${STARFCPY_ROOT}/datasets \
+#  --volume ${PROJECT_ROOT}/output:${STARFCPY_ROOT}/output \
+#  --volume ${PROJECT_ROOT}/masks:${STARFCPY_ROOT}/masks \
+#  --volume /tmp/.X11-unix:/tmp/.X11-unix \

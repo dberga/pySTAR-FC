@@ -1,0 +1,22 @@
+#!/bin/bash
+
+PROJECT_ROOT="$(cd "$(dirname "$0")"; cd ..; pwd)"
+OPENSALICON_REPO="https://github.com/CLT29/OpenSALICON"
+
+#echo "Cloning ${OPENSALICON_REPO}..."
+#rm -rf contrib/SALICON
+#git clone ${OPENSALICON_REPO} contrib/SALICON
+
+# echo "Dowloading caffemodel files..."
+# if ! test -f /tmp/model_files.tgz; then
+#     wget --directory-prefix="/tmp" 'http://www.cs.pitt.edu/%7Echris/files/2016/model_files.tgz' /tmp/model_files.tgz
+# else
+#     echo "Skipped download, already exists."
+# fi
+
+# echo "Extracting caffemodel files..."
+# tar -zxvf /tmp/model_files.tgz -C /tmp
+# mv /tmp/model_files/*.caffemodel contrib/SALICON
+
+echo "Building starfcpy Docker image..."
+sudo docker build -t starfcpy . -f Dockerfile
