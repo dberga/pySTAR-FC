@@ -8,8 +8,8 @@ class Settings:
         self.visualize = visualize
 
         #input params
-        self.input = None
-        self.batch = None
+        self.input = ''
+        self.batch = ''
 
         #attention map params
         self.PeriphSalAlgorithm = ''
@@ -57,7 +57,7 @@ class Settings:
             raise ValueError('No input options provided. Provide either single image input or directory in the .ini file.')
 
         self.PeriphSalAlgorithm = iniReader['attention_map_params'].get('PeriphSalAlgorithm', fallback='AIM')
-        self.AIMBasis = iniReader['attention_map_params'].get('AIMBasis', fallback='data/21infomax950.mat')
+        self.AIMBasis = iniReader['attention_map_params'].get('AIMBasis', fallback='data/dictionary/21infomax950.mat')
         self.CentralSalAlgorithm = iniReader['attention_map_params'].get('CentralSalAlgorithm', fallback='DeepGazeII')
         self.pgain = iniReader['attention_map_params'].getfloat('pgain')
         self.cgain = iniReader['attention_map_params'].getfloat('cgain', fallback=1.0)
@@ -102,8 +102,15 @@ class Settings:
         self.saveDir = iniReader['log_params'].get('saveDir', fallback=None)
         self.saveFix = iniReader['log_params'].getboolean('saveFix', fallback = False)
         #self.saveScreen = iniReader['log_params'].getboolean('saveScreen', fallback = False) #GUI not implemented
-
+        self.visualize = iniReader['log_params'].getboolean('visualize', fallback = True)
         self.overwrite = iniReader['log_params'].getboolean('overwrite', fallback = False)
 
         if self.saveFix and not self.saveDir:
             raise ValueError('saveFix set to true but save directory path (saveDir) is not provided. Set saveDir in the .ini file!')
+            
+        self.task_relevance = iniReader['task_params'].getboolean('task_relevance', fallback=0)
+        self.task_type = iniReader['task_params'].getint('task_type', fallback=1)
+        self.task_text = iniReader['task_params'].get('task_text', fallback=None)
+        self.task_lr = iniReader['task_params'].get('task_lr', fallback='SparseCoding')
+        
+        

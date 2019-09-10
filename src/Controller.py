@@ -5,16 +5,19 @@ import cv2
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.gridspec as gridspec
-
 import time
+import scipy.io as sio
 
 from Environment import Environment
+from Eye import Eye
 from PeripheralAttentionalMap import PeripheralAttentionalMap
 from CentralAttentionalMap import CentralAttentionalMap
 from ConspicuityMap import ConspicuityMap
 from PriorityMap import PriorityMap
 from FixationHistoryMap import FixationHistoryMap
-from Eye import Eye
+from TRM import TRM
+from vTE import vTE
+from LTM import LTM
 
 class Controller:
     def __init__(self, settings):
@@ -33,7 +36,7 @@ class Controller:
             else:
                 os.makedirs(self.settings.saveDir)
                 self.saveResults = True
-
+        print(self.saveResults)
     #get input images
     def getInputImages(self):
         if self.settings.input:
@@ -47,18 +50,25 @@ class Controller:
         imgName, ext = os.path.splitext(os.path.basename(imgPath))
         self.imgName = imgName
         self.env = Environment(self.settings)
-        if self.settings.batch:
-            self.env.loadStaticStimulus(self.settings.batch + '/' + imgPath)
-        else:
-            self.env.loadStaticStimulus(imgPath)
+        self.env.loadStaticStimulus(self.settings.batch + '/' + imgPath)
         self.eye = Eye(self.settings, self.env)
+        
         self.periphMap = PeripheralAttentionalMap(self.env.height, self.env.width, self.settings)
         self.centralMap = CentralAttentionalMap(self.env.height, self.env.width, self.settings)
         self.conspMap = ConspicuityMap(self.env.height, self.env.width, self.settings)
         self.priorityMap = PriorityMap(self.env.height, self.env.width, self.settings)
         self.fixHistMap = FixationHistoryMap(self.env.height, self.env.width, self.env.hPadded, self.env.wPadded, self.settings)
-
-
+        
+        self.LongTermMemory = LTM(self.settings)
+        self.visualTaskExecutive = vTE(self.settings)
+        self.TaskRelevanceMap = TRM(self.env.height, self.env.width, self.settings)
+        
+        if self.settings.task_relevance == 1:
+            #learn representations if not done previously
+            self.LongTermMemory.learn()
+            #get task relevance (initial)
+            self.TaskRelevanceMap.setTRM(self.visualTaskExecutive.get_relevance(self.LongTermMemory,self.env.scene))
+        
     #computes fixations for each image and each subject
     def run(self):
         self.getInputImages()
@@ -69,84 +79,68 @@ class Controller:
                 self.computeFixations()
 
                 if self.saveResults:
-                    currentSaveDir = '{}/{}/'.format(self.settings.saveDir, self.imgName)
+                    currentSaveDir = self.settings.saveDir
                     if not os.path.exists(currentSaveDir):
                         os.makedirs(currentSaveDir)
-                    self.fixHistMap.dumpFixationsToMat('{}/fixations_{}.mat'.format(currentSaveDir, self.imgName, i))
+                    #self.fixHistMap.dumpFixationsToMat('{}/fixations_{}.mat'.format(currentSaveDir, self.imgName, i))
                     cv2.imwrite('{}/fixations_{}.png'.format(currentSaveDir, self.imgName), self.env.sceneWithFixations.astype(np.uint8))
-
+                    
+                    #cv2.imwrite('{}/conspMap_{}.png'.format(currentSaveDir, self.imgName), self.conspMap.conspMap)
+                    #cv2.imwrite('{}/priorityMap_{}.png'.format(currentSaveDir, self.imgName), self.priorityMap.priorityMap)
+                    #cv2.imwrite('{}/fixHistMap_{}.png'.format(currentSaveDir, self.imgName), self.fixHistMap.fixHistMap)
+                    
     def computeFixations(self):
 
+        if self.settings.visualize:
+            fig = plt.figure(1, figsize=(13,7), facecolor='white')
+            gs = gridspec.GridSpec(2, 3)
+            plt.show(block=False)
+            plt.ion()
+
         for i in range(self.settings.maxNumFixations):
-            t0 = time.time()
+            print('fixation {}'.format(i))
+            if self.saveResults:
+                currentSaveDir = self.settings.saveDir
+                if not os.path.exists(currentSaveDir):
+                    os.makedirs(currentSaveDir)
+                    
             self.eye.viewScene()
-            t_fov = time.time() - t0
 
-            print('[FOVEATE] Time elapsed {:0.03f}'.format(t_fov))
-
-            prevGazeCoords = self.eye.gazeCoords
-
-            t0 = time.time()
             self.periphMap.computeBUSaliency(self.eye.viewFov)
             self.periphMap.computePeriphMap(self.settings.blendingStrategy==1)
-            t_periph = time.time() - t0
-            print('[PeriphMap] Time elapsed {:0.03f}'.format(t_periph))
 
-            t0 = time.time()
             self.centralMap.centralDetection(self.eye.viewFov)
             self.centralMap.maskCentralDetection()
-            t_central = time.time() - t0
-            print('[CentralMap] Time elapsed {:0.03f}'.format(t_central))
 
-            #self.conspMap.computeConspicuityMap(self.periphMap.periphMap, self.centralMap.centralMap) #this is not used anywhere, for now commenting out
-
-            t0 = time.time()
+            self.conspMap.computeConspicuityMap(self.periphMap.periphMap, self.centralMap.centralMap) 
+            
             self.priorityMap.computeNextFixationDirection(self.periphMap.periphMap, self.centralMap.centralMap, self.fixHistMap.getFixationHistoryMap())
-            t_priority = time.time() - t0
-            print('[PriorityMap] Time elapsed {:0.03f}'.format(t_priority))
-
-            print('PrevGazeCoords=[{}, {}]'.format(prevGazeCoords[0], prevGazeCoords[1]))
+            
+            prevGazeCoords = self.eye.gazeCoords
             self.eye.setGazeCoords(self.priorityMap.nextFixationDirection)
 
             self.env.drawFixation(self.eye.gazeCoords.astype(np.int32))
 
-            t0 = time.time()
             self.fixHistMap.decayFixations()
-            t_ior = time.time() - t0
-            print('[IOR] Time elapsed {:0.03f}'.format(t_priority))
-
-            t0 = time.time()
             self.fixHistMap.saveFixationCoords(prevGazeCoords)
-            t_save = time.time() - t0
-            print('[SaveFix] Time elapsed {:0.03f}'.format(t_save))
-
+            
+            
             if self.settings.visualize:
-                t0 = time.time()
+                self.add_subplot(cv2.cvtColor(self.eye.viewFov, cv2.COLOR_BGR2RGB), 'Foveated View', gs[0,0])
+                self.add_subplot(self.periphMap.periphMap, 'Peripheral Map', gs[0,1])
+                self.add_subplot(self.centralMap.centralMap, 'Central Map', gs[1,0])
+                self.add_subplot(self.priorityMap.priorityMap, 'Priority Map', gs[1,1])
+                self.add_subplot(cv2.cvtColor(self.env.sceneWithFixations.astype(np.uint8), cv2.COLOR_BGR2RGB), 'Image: {} \n Fixation #{}/{}'.format(self.imgName, i, self.settings.maxNumFixations), gs[:,-1])
                 if i == 0:
-                    plt.close('all')
-
-                    fig = plt.figure(1, figsize=(13,7), facecolor='white')
-                    gs = gridspec.GridSpec(2, 3)
-                    plt.show(block=False)
-                    plt.ion()
-                plt.clf()
-                axes = []
-                axes.append(self.add_subplot(fig, cv2.cvtColor(self.eye.viewFov, cv2.COLOR_BGR2RGB), 'Foveated View', gs[0,0]))
-                axes.append(self.add_subplot(fig, self.periphMap.periphMap, 'Peripheral Map: ' + self.settings.PeriphSalAlgorithm, gs[0,1]))
-                axes.append(self.add_subplot(fig, self.centralMap.centralMap, 'Central Map: ' + self.settings.CentralSalAlgorithm, gs[1,0]))
-                axes.append(self.add_subplot(fig, self.priorityMap.priorityMap, 'Priority Map', gs[1,1]))
-                axes.append(self.add_subplot(fig, cv2.cvtColor(self.env.sceneWithFixations.astype(np.uint8), cv2.COLOR_BGR2RGB), 'Image: {} \n Fixation #{}/{}'.format(self.imgName, i+1, self.settings.maxNumFixations), gs[:,-1]))
-                gs.tight_layout(fig)
+                    gs.tight_layout(fig)
                 fig.canvas.draw()
-                t_vis = time.time() - t0
-                print('[vis] Time elapsed {:0.03f}'.format(t_vis))
-
-
-    def add_subplot(self, fig, img, title, plot_idx):
-        ax = fig.add_subplot(plot_idx)
-        ax.set_title(title, fontsize=10)
-        ax.set_xlabel('[{:10.3f}, {:10.3f}]'.format(np.min(img), np.max(img)))
+            if self.saveResults:   
+                self.fixHistMap.dumpFixationsToMat('{}/{}.mat'.format(currentSaveDir, self.imgName, i))
+            
+    def add_subplot(self, img, title, plot_idx):
+        ax = plt.subplot(plot_idx)
         ax.get_xaxis().set_ticks([])
         ax.get_yaxis().set_ticks([])
-        ax.imshow(img)
-        return ax
+        ax.set_title(title, fontsize=10)
+        ax.set_xlabel('[{:10.3f}, {:10.3f}]'.format(np.min(img), np.max(img)))
+        plt.imshow(img)
