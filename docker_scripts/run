@@ -2,19 +2,20 @@
 
 PROJECT_ROOT="$(cd "$(dirname "$0")"; cd ..; pwd)"
 STARFCPY_ROOT="/opt/STAR-FCpy"
+PROJECT_NAME="pystarfct"
 
-xhost +local:starfcpy
+xhost +local:${PROJECT_NAME}
 sudo nvidia-docker run -it \
-  --name starfcpy \
-  -h starfcpy \
+  --name ${PROJECT_NAME} \
+  -h ${PROJECT_NAME} \
   --volume ${PROJECT_ROOT}:${STARFCPY_ROOT} \
   -v /dev/input \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   -e DISPLAY=$DISPLAY \
   -w ${STARFCPY_ROOT} \
   --rm \
-  starfcpy "$@"
-xhost -local:starfcpy
+  ${PROJECT_NAME} "$@"
+xhost -local:${PROJECT_NAME}
 
 
 #  --volume ${PROJECT_ROOT}/src:${STARFCPY_ROOT}/src \

@@ -2,6 +2,7 @@
 
 PROJECT_ROOT="$(cd "$(dirname "$0")"; cd ..; pwd)"
 OPENSALICON_REPO="https://github.com/CLT29/OpenSALICON"
+PROJECT_NAME="pystarfct"
 
 #echo "Cloning ${OPENSALICON_REPO}..."
 #rm -rf contrib/SALICON
@@ -19,4 +20,4 @@ OPENSALICON_REPO="https://github.com/CLT29/OpenSALICON"
 # mv /tmp/model_files/*.caffemodel contrib/SALICON
 
 echo "Building starfcpy Docker image..."
-sudo docker build -t starfcpy . -f Dockerfile
+sudo docker build -t ${PROJECT_NAME} . -f Dockerfile

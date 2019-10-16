@@ -16,7 +16,7 @@ gdown --id $fileid -O $filename
 unzip $filename -d DeepGazeII
 
 ## create dynamic link to ICF
-ln -s DeepGazeII ICF
+ln -s DeepGazeII/ ICF
 
 
 
