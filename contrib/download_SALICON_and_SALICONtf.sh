@@ -1,7 +1,7 @@
 
 #download SALICON (caffe)
 mkdir SALICON
-export fileid=18kf3sM2AoZJ6rlvZX2kwBY7TNlhMja-C && export filename=SALICON.zip
+export fileid=1MIe6qjaz5OrURLsBLZcNj4BikT-FEIMs && export filename=SALICON.zip
 #wget --no-check-certificate -O $filename 'https://docs.google.com/uc?export=download&id='$fileid
 if ! type "gdown" > /dev/null; then 
 	pip install gdown
