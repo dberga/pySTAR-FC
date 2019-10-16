@@ -1,9 +1,7 @@
 import numpy as np
 import math
 import cv2
-
-from AIM import AIM
-from ICF import ICF
+import sys
 
 class PeripheralAttentionalMap:
 
@@ -15,8 +13,14 @@ class PeripheralAttentionalMap:
         self.periphMap = None
 
         if 'AIM' in settings.PeriphSalAlgorithm:
+            sys.path.insert(0, 'contrib/AIM')
+            from AIM import AIM
             self.buSal = AIM(settings.AIMBasis)
         elif 'ICF' in settings.PeriphSalAlgorithm:
+            if not os.path.exists('contrib/ICF/ICF.py'):
+                os.system('cd contrib; sh download_DeepGazeII_and_ICF.sh; cd ..')
+            sys.path.insert(0, 'contrib/ICF')
+            from ICF import ICF
             self.buSal = ICF()
 
         self.initPeripheralMask()
