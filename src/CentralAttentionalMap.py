@@ -2,6 +2,8 @@ import numpy as np
 import time
 import math
 import cv2
+import sys
+import os
 from PIL import Image
 
 class CentralAttentionalMap:
@@ -13,9 +15,21 @@ class CentralAttentionalMap:
         self.centralMap = None
         self.cv2pil = False
         if 'DeepGazeII' in settings.CentralSalAlgorithm:
+            if not os.path.exists('contrib/DeepGazeII/DeepGazeII.py'):
+                os.system('cd contrib; sh download_DeepGazeII_and_ICF.sh; cd ..')
+            sys.path.insert(0, 'contrib/DeepGazeII')
             from DeepGazeII import DeepGazeII
             self.buSal = DeepGazeII()
+        if 'SALICON' in settings.CentralSalAlgorithm:
+            if not os.path.exists('contrib/SALICON/Salicon.py'):
+                os.system('cd contrib; sh download_SALICON_and_SALICONtf.sh; cd ..')
+            sys.path.insert(0, 'contrib/SALICON')
+            from Salicon import Salicon
+            self.buSal = Salicon(prototxtpath='contrib/SALICON/salicon.prototxt', model='contrib/SALICON/salicon_osie3.caffemodel')
         if 'SALICONtf' in settings.CentralSalAlgorithm:
+            if not os.path.exists('contrib/SALICONtf/src/Salicon.py'):
+                os.system('cd contrib; sh download_SALICON_and_SALICONtf.sh; cd ..')
+            sys.path.insert(0, 'contrib/SALICONtf/src')
             from SALICONtf import SALICONtf
             self.buSal = SALICONtf(weights='contrib/SALICONtf/models/model_lr0.01_loss_crossentropy.h5')
             self.cv2pil = True

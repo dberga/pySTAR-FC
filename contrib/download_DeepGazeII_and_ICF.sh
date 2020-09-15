@@ -10,7 +10,7 @@ unzip $filename -d DeepGazeII
 rm $filename
 cd DeepGazeII && mv deep_gaze/* . && rmdir deep_gaze && cd ..
 
-## Download .py files (with contrib paths)
+## Update .py files (with contrib paths)
 export fileid=174CHXHOQmzSP0fjB0fBzX2aIs-P6VhVo && export filename=DeepGazeII.zip
 gdown --id $fileid -O $filename
 unzip $filename -d DeepGazeII
