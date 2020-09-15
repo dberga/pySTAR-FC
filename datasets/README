@@ -1,0 +1,3 @@
+For each dataset use the download.sh file.
+Then run through matlab the DATASET_parse.m
+
