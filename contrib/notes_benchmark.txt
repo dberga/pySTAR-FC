@@ -1,0 +1,11 @@
+Other multimodal/top-down attention models:
+
+stnet-object-localization
+caption-guided-saliency
+keras-cam
+keras-grad-cam
+probabilistic_unet
+pytorch-yolo2
+show-attend-and-tell-tensorflow
+TextguidedATT
+VGG16CAM-keras
